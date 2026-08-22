@@ -23,12 +23,14 @@ public class JobService {
         job.setStatus(JobStatus.QUEUED);
         job.setCreatedAt(LocalDateTime.now());
         job.setUpdatedAt(LocalDateTime.now());
+        job.setRetryCount(0);
         Job saved=jobRepository.save(job);
         jobProducer.sendJob(saved.getId());
         JobResponse jobResponse=new JobResponse();
         jobResponse.setId(saved.getId());
         jobResponse.setType(saved.getType());
         jobResponse.setStatus(saved.getStatus());
+        jobResponse.setRetryCount(saved.getRetryCount());
         jobResponse.setCreatedAt(saved.getCreatedAt());
         jobResponse.setUpdatedAt(saved.getUpdatedAt());
         return jobResponse;
@@ -39,6 +41,7 @@ public class JobService {
         jobResponse.setId(job.getId());
         jobResponse.setType(job.getType());
         jobResponse.setStatus(job.getStatus());
+        jobResponse.setRetryCount(jobResponse.getRetryCount());
         jobResponse.setCreatedAt(job.getCreatedAt());
         jobResponse.setUpdatedAt(job.getUpdatedAt());
         return jobResponse;

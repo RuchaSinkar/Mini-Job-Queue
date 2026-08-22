@@ -14,6 +14,7 @@ public class JobResponse {
     private Long id;
     private JobType type;
     private JobStatus status;
+    private int retryCount;
     private LocalDateTime createdAt;
     private LocalDateTime updatedAt;
 }

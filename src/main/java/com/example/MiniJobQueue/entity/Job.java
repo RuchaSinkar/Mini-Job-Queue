@@ -25,6 +25,8 @@ public class Job {
 
     private String result;
 
+    private int retryCount;
+
     private LocalDateTime createdAt;
 
     private LocalDateTime updatedAt;

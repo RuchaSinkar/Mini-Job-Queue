@@ -10,15 +10,19 @@ import org.springframework.stereotype.Component;
 import java.io.File;
 import java.io.FileWriter;
 import java.io.IOException;
+import java.io.InterruptedIOException;
 import java.time.LocalDateTime;
 
 @Component
 @RequiredArgsConstructor
 public class JobConsumer {
+
     private final JobRepository jobRepository;
+    private static final Integer MAX_RETRIES=3;
+    private final JobProducer jobProducer;
 
     @RabbitListener(queues = "job.queue")
-    public void consumeJob(Long id){
+    public void consumeJob(Long id)  {
         Job job=jobRepository.findById(id).orElseThrow(()->new IllegalArgumentException("Job not found"));
         try {
             job.setStatus(JobStatus.PROCESSING);
@@ -43,9 +47,20 @@ public class JobConsumer {
             job.setUpdatedAt(LocalDateTime.now());
             jobRepository.save(job);
         }catch (IOException e){
-            job.setStatus(JobStatus.FAILED);
-            job.setUpdatedAt(LocalDateTime.now());
-            jobRepository.save(job);
+            int retries=job.getRetryCount();
+            retries++;
+            if(retries<=MAX_RETRIES) {
+                job.setRetryCount(retries);
+                job.setStatus(JobStatus.QUEUED);
+                job.setUpdatedAt(LocalDateTime.now());
+                jobRepository.save(job);
+                jobProducer.sendRetryJob(id,retries);
+            }
+            else {
+                job.setStatus(JobStatus.FAILED);
+                job.setUpdatedAt(LocalDateTime.now());
+                jobRepository.save(job);
+            }
         }
     }
 }
