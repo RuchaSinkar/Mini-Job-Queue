@@ -27,7 +27,13 @@ public class Job {
 
     private int retryCount;
 
+    private String failureReason;
+
     private LocalDateTime createdAt;
 
     private LocalDateTime updatedAt;
+
+    private LocalDateTime startedAt;
+
+    private LocalDateTime completedAt;
 }

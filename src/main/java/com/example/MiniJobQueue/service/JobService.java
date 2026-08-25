@@ -4,6 +4,8 @@ import com.example.MiniJobQueue.dto.CreateJobRequest;
 import com.example.MiniJobQueue.dto.JobResponse;
 import com.example.MiniJobQueue.entity.Job;
 import com.example.MiniJobQueue.enums.JobStatus;
+import com.example.MiniJobQueue.exception.InvalidJobStateException;
+import com.example.MiniJobQueue.exception.JobNotFoundException;
 import com.example.MiniJobQueue.queue.JobProducer;
 import com.example.MiniJobQueue.repository.JobRepository;
 import lombok.RequiredArgsConstructor;
@@ -36,14 +38,29 @@ public class JobService {
         return jobResponse;
     }
     public JobResponse getJob(Long id){
-        Job job=jobRepository.findById(id).orElseThrow(()->new IllegalArgumentException("Job Not Found"));
+        Job job=jobRepository.findById(id).orElseThrow(()->new JobNotFoundException("Job Not Found"));
         JobResponse jobResponse=new JobResponse();
         jobResponse.setId(job.getId());
         jobResponse.setType(job.getType());
         jobResponse.setStatus(job.getStatus());
-        jobResponse.setRetryCount(jobResponse.getRetryCount());
+        jobResponse.setRetryCount(job.getRetryCount());
         jobResponse.setCreatedAt(job.getCreatedAt());
         jobResponse.setUpdatedAt(job.getUpdatedAt());
         return jobResponse;
+    }
+
+    public void failedJob(Long id) {
+        Job job=jobRepository.findById(id).orElseThrow(()->new IllegalArgumentException("Job not found"));
+        if(job.getStatus()==JobStatus.FAILED){
+            job.setRetryCount(0);
+            job.setStatus(JobStatus.QUEUED);
+            job.setUpdatedAt(LocalDateTime.now());
+            job.setFailureReason(null);
+            Job saved=jobRepository.save(job);
+            jobProducer.sendJob(id);
+        }
+        else{
+            throw new InvalidJobStateException("Only Failed jobs can be retried");
+        }
     }
 }

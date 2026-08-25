@@ -42,6 +42,14 @@ public class JobProducer {
                         id
                 );
                 break;
+
         }
+    }
+    public void sendFailedJob(Long id){
+        rabbitTemplate.convertAndSend(
+                "failed.job.exchange",
+                "failed.job.routing.key",
+                id
+        );
     }
 }

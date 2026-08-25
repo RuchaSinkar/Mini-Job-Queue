@@ -2,6 +2,7 @@ package com.example.MiniJobQueue.queue;
 
 import com.example.MiniJobQueue.entity.Job;
 import com.example.MiniJobQueue.enums.JobStatus;
+import com.example.MiniJobQueue.exception.JobNotFoundException;
 import com.example.MiniJobQueue.repository.JobRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.amqp.rabbit.annotation.RabbitListener;
@@ -10,7 +11,7 @@ import org.springframework.stereotype.Component;
 import java.io.File;
 import java.io.FileWriter;
 import java.io.IOException;
-import java.io.InterruptedIOException;
+import java.time.Duration;
 import java.time.LocalDateTime;
 
 @Component
@@ -21,13 +22,14 @@ public class JobConsumer {
     private static final Integer MAX_RETRIES=3;
     private final JobProducer jobProducer;
 
-    @RabbitListener(queues = "job.queue")
+    @RabbitListener(queues = "job.queue", containerFactory = "rabbitListenerContainerFactory")
     public void consumeJob(Long id)  {
-        Job job=jobRepository.findById(id).orElseThrow(()->new IllegalArgumentException("Job not found"));
+        Job job=jobRepository.findById(id).orElseThrow(()->new JobNotFoundException("Job not found"));
+        if(job.getStatus()==JobStatus.COMPLETED || job.getStatus()==JobStatus.FAILED) return;
         try {
-            job.setStatus(JobStatus.PROCESSING);
-            job.setUpdatedAt(LocalDateTime.now());
-            jobRepository.save(job);
+            int updated= jobRepository.claimJob(id,JobStatus.PROCESSING,JobStatus.QUEUED);
+            if(updated==0) return;
+            job.setStartedAt(LocalDateTime.now());
             //worker does work
             String filename = "report_" + job.getId() + ".txt";
             File directory = new File("reports");
@@ -45,6 +47,8 @@ public class JobConsumer {
             job.setResult(file.getAbsolutePath());
             job.setStatus(JobStatus.COMPLETED);
             job.setUpdatedAt(LocalDateTime.now());
+            job.setCompletedAt(LocalDateTime.now());
+            Duration.between(job.getStartedAt(), job.getCompletedAt());
             jobRepository.save(job);
         }catch (IOException e){
             int retries=job.getRetryCount();
@@ -59,7 +63,9 @@ public class JobConsumer {
             else {
                 job.setStatus(JobStatus.FAILED);
                 job.setUpdatedAt(LocalDateTime.now());
+                job.setFailureReason(e.getMessage());
                 jobRepository.save(job);
+                jobProducer.sendFailedJob(id);
             }
         }
     }

@@ -5,7 +5,7 @@ import com.example.MiniJobQueue.dto.JobResponse;
 import com.example.MiniJobQueue.service.JobService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
-import org.springframework.stereotype.Controller;
+import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
 @RestController
@@ -24,4 +24,8 @@ public class JobController {
         return jobService.getJob(id);
     }
 
+    @PostMapping("/{id}/retry")
+    public void retryFailedJob(@PathVariable Long id){
+        jobService.failedJob(id);
+    }
 }

@@ -3,6 +3,8 @@ package com.example.MiniJobQueue.queue;
 import org.springframework.amqp.core.Binding;
 import org.springframework.amqp.core.BindingBuilder;
 import org.springframework.amqp.core.DirectExchange;
+import org.springframework.amqp.rabbit.config.SimpleRabbitListenerContainerFactory;
+import org.springframework.amqp.rabbit.connection.ConnectionFactory;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.amqp.core.Queue;
@@ -25,6 +27,29 @@ public class RabbitMQConfig {
     // create exchange
     public DirectExchange jobExchange(){
         return new DirectExchange("job.exchange");
+    }
+
+    @Bean
+    public DirectExchange failedJobExchange(){
+        return new DirectExchange("failed.job.exchange");
+    }
+
+    @Bean
+    public Queue failedJobQueue(){
+        return new Queue(
+                "failed.job.queue",
+                true,
+                false,
+                false
+        );
+    }
+
+    @Bean
+    public Binding failedJobBinding(Queue failedJobQueue, DirectExchange failedJobExchange){
+        return BindingBuilder
+                .bind(failedJobQueue)
+                .to(failedJobExchange)
+                .with("failed.job.routing.key");
     }
 
     @Bean
@@ -102,6 +127,18 @@ public class RabbitMQConfig {
             Queue retryQueue3,
             DirectExchange jobExchange
     ){
-        return BindingBuilder.bind(retryQueue3).to(jobExchange).with("retry.1");
+        return BindingBuilder.bind(retryQueue3).to(jobExchange).with("retry.3");
+    }
+
+    @Bean
+    public SimpleRabbitListenerContainerFactory rabbitListenerContainerFactory(
+            ConnectionFactory connectionFactory
+    ){
+        SimpleRabbitListenerContainerFactory factory=new SimpleRabbitListenerContainerFactory();
+        factory.setConnectionFactory(connectionFactory);
+        factory.setConcurrentConsumers(3);
+        factory.setMaxConcurrentConsumers(5);
+        factory.setPrefetchCount(1);
+        return factory;
     }
 }
