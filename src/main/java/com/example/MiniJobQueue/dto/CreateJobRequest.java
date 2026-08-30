@@ -1,5 +1,6 @@
 package com.example.MiniJobQueue.dto;
 
+import com.example.MiniJobQueue.enums.JobPriority;
 import com.example.MiniJobQueue.enums.JobType;
 import jakarta.validation.constraints.NotNull;
 import lombok.Getter;
@@ -12,4 +13,6 @@ import lombok.Setter;
 public class CreateJobRequest {
     @NotNull
     private JobType type;
+
+    private JobPriority priority;
 }

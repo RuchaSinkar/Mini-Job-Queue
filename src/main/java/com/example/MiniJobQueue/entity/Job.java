@@ -1,5 +1,6 @@
 package com.example.MiniJobQueue.entity;
 
+import com.example.MiniJobQueue.enums.JobPriority;
 import com.example.MiniJobQueue.enums.JobStatus;
 import com.example.MiniJobQueue.enums.JobType;
 import jakarta.persistence.*;
@@ -22,6 +23,9 @@ public class Job {
 
     @Enumerated(EnumType.STRING)
     private JobStatus status;
+
+    @Enumerated(EnumType.STRING)
+    private JobPriority priority=JobPriority.MEDIUM;
 
     private String result;
 

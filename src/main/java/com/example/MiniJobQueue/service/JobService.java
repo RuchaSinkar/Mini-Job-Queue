@@ -3,6 +3,7 @@ package com.example.MiniJobQueue.service;
 import com.example.MiniJobQueue.dto.CreateJobRequest;
 import com.example.MiniJobQueue.dto.JobResponse;
 import com.example.MiniJobQueue.entity.Job;
+import com.example.MiniJobQueue.enums.JobPriority;
 import com.example.MiniJobQueue.enums.JobStatus;
 import com.example.MiniJobQueue.exception.InvalidJobStateException;
 import com.example.MiniJobQueue.exception.JobNotFoundException;
@@ -26,14 +27,17 @@ public class JobService {
         job.setCreatedAt(LocalDateTime.now());
         job.setUpdatedAt(LocalDateTime.now());
         job.setRetryCount(0);
+        job.setPriority(createJobRequest.getPriority());
+
         Job saved=jobRepository.save(job);
-        jobProducer.sendJob(saved.getId());
+        jobProducer.sendJob(saved.getId(),saved.getPriority());
         JobResponse jobResponse=new JobResponse();
         jobResponse.setId(saved.getId());
         jobResponse.setType(saved.getType());
         jobResponse.setStatus(saved.getStatus());
         jobResponse.setRetryCount(saved.getRetryCount());
         jobResponse.setCreatedAt(saved.getCreatedAt());
+        jobResponse.setPriority(saved.getPriority());
         jobResponse.setUpdatedAt(saved.getUpdatedAt());
         return jobResponse;
     }
@@ -46,6 +50,7 @@ public class JobService {
         jobResponse.setRetryCount(job.getRetryCount());
         jobResponse.setCreatedAt(job.getCreatedAt());
         jobResponse.setUpdatedAt(job.getUpdatedAt());
+        jobResponse.setPriority(job.getPriority());
         return jobResponse;
     }
 
@@ -56,11 +61,21 @@ public class JobService {
             job.setStatus(JobStatus.QUEUED);
             job.setUpdatedAt(LocalDateTime.now());
             job.setFailureReason(null);
+            job.setPriority(JobPriority.LOW);
             Job saved=jobRepository.save(job);
-            jobProducer.sendJob(id);
+            jobProducer.sendJob(id,saved.getPriority());
         }
         else{
             throw new InvalidJobStateException("Only Failed jobs can be retried");
+        }
+    }
+    public void cancelJob(Long id){
+        Job job=jobRepository.findById(id).orElseThrow(()->new JobNotFoundException("Job not found"));
+        if(job.getStatus()==JobStatus.QUEUED){
+            job.setStatus(JobStatus.CANCELLED);
+        }
+        else{
+            throw new InvalidJobStateException("Only queued jobs can be cancelled");
         }
     }
 }

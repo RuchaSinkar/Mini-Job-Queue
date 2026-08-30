@@ -1,6 +1,7 @@
 package com.example.MiniJobQueue.queue;
 
 import com.example.MiniJobQueue.entity.Job;
+import com.example.MiniJobQueue.enums.JobPriority;
 import com.example.MiniJobQueue.enums.JobStatus;
 import com.example.MiniJobQueue.exception.JobNotFoundException;
 import com.example.MiniJobQueue.repository.JobRepository;
@@ -25,7 +26,7 @@ public class JobConsumer {
     @RabbitListener(queues = "job.queue", containerFactory = "rabbitListenerContainerFactory")
     public void consumeJob(Long id)  {
         Job job=jobRepository.findById(id).orElseThrow(()->new JobNotFoundException("Job not found"));
-        if(job.getStatus()==JobStatus.COMPLETED || job.getStatus()==JobStatus.FAILED) return;
+        if(job.getStatus()==JobStatus.CANCELLED || job.getStatus()==JobStatus.COMPLETED || job.getStatus()==JobStatus.FAILED) return;
         try {
             int updated= jobRepository.claimJob(id,JobStatus.PROCESSING,JobStatus.QUEUED);
             if(updated==0) return;
@@ -58,14 +59,14 @@ public class JobConsumer {
                 job.setStatus(JobStatus.QUEUED);
                 job.setUpdatedAt(LocalDateTime.now());
                 jobRepository.save(job);
-                jobProducer.sendRetryJob(id,retries);
+                jobProducer.sendRetryJob(id,retries,job.getPriority());
             }
             else {
                 job.setStatus(JobStatus.FAILED);
                 job.setUpdatedAt(LocalDateTime.now());
                 job.setFailureReason(e.getMessage());
                 jobRepository.save(job);
-                jobProducer.sendFailedJob(id);
+                jobProducer.sendFailedJob(id,job.getPriority());
             }
         }
     }

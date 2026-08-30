@@ -13,4 +13,10 @@ public class JobMetricsResponse {
     private Long processingJobs;
     private Long completedJobs;
     private Long failedJobs;
+    private Double averageProcessingTime;
+    private Double averageQueueWaitTime;
+    private Long totalRetries;
+    private Long retriedJobs;
+    private Double failureRate;
+    private Double retryRate;
 }

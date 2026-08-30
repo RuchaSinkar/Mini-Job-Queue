@@ -1,5 +1,6 @@
 package com.example.MiniJobQueue.dto;
 
+import com.example.MiniJobQueue.enums.JobPriority;
 import com.example.MiniJobQueue.enums.JobStatus;
 import com.example.MiniJobQueue.enums.JobType;
 import lombok.Getter;
@@ -14,6 +15,7 @@ public class JobResponse {
     private Long id;
     private JobType type;
     private JobStatus status;
+    private JobPriority priority;
     private int retryCount;
     private LocalDateTime createdAt;
     private LocalDateTime updatedAt;

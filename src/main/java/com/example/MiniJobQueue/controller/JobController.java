@@ -28,4 +28,7 @@ public class JobController {
     public void retryFailedJob(@PathVariable Long id){
         jobService.failedJob(id);
     }
+
+    @DeleteMapping("{id}")
+    public void deleteJob(@PathVariable Long id) { jobService.cancelJob(id);}
 }

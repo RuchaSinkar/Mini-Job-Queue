@@ -20,7 +20,15 @@ public class RabbitMQConfig {
     @Bean
     // create queue
     public Queue jobQueue(){
-        return new Queue("job.queue");
+
+        Map<String,Object> arguments=new HashMap<>();
+        arguments.put("x-max-priority",10);
+        Queue queue=new Queue("job.queue",
+                true,
+                false,
+                false,
+                arguments);
+        return queue;
     }
 
     @Bean
