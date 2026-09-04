@@ -1,0 +1,24 @@
+spring:
+  datasource:
+    url: jdbc:postgresql://aws-0-ap-northeast-1.pooler.supabase.com:5432/postgres?sslmode=require
+    username: postgres.fiknzfvjlwwwfujlxnwy
+    password: ${DB_PASSWORD}
+    driver-class-name: org.postgresql.Driver
+
+  jpa:
+    hibernate:
+      ddl-auto: update
+    show-sql: false
+
+  rabbitmq:
+    host: frog.lmq.cloudamqp.com
+    port: 5671
+    username: hyspncsv
+    password: ${RABBITMQ_PASSWORD}
+    virtual-host: hyspncsv
+    ssl:
+      enabled: true
+
+job:
+  processing:
+    timeout: 30

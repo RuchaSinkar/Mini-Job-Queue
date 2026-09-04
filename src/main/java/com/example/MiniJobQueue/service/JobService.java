@@ -19,18 +19,24 @@ import java.time.LocalDateTime;
 public class JobService {
     private final JobRepository jobRepository;
     private final JobProducer jobProducer;
+    private final JobHistoryService jobHistoryService;
 
     public JobResponse createJob(CreateJobRequest createJobRequest){
         Job job=new Job();
         job.setType(createJobRequest.getType());
-        job.setStatus(JobStatus.QUEUED);
+        job.setScheduledAt(createJobRequest.getScheduledAt());
+        if(job.getScheduledAt()==null) {
+            job.setStatus(JobStatus.QUEUED);
+        }
+        else job.setStatus(JobStatus.SCHEDULED);
         job.setCreatedAt(LocalDateTime.now());
         job.setUpdatedAt(LocalDateTime.now());
         job.setRetryCount(0);
         job.setPriority(createJobRequest.getPriority());
-
         Job saved=jobRepository.save(job);
-        jobProducer.sendJob(saved.getId(),saved.getPriority());
+        if(job.getStatus()==JobStatus.QUEUED) {
+           jobProducer.sendJob(saved.getId(),saved.getPriority());
+        }
         JobResponse jobResponse=new JobResponse();
         jobResponse.setId(saved.getId());
         jobResponse.setType(saved.getType());
@@ -58,11 +64,13 @@ public class JobService {
         Job job=jobRepository.findById(id).orElseThrow(()->new IllegalArgumentException("Job not found"));
         if(job.getStatus()==JobStatus.FAILED){
             job.setRetryCount(0);
+            JobStatus fromStatus=job.getStatus();
             job.setStatus(JobStatus.QUEUED);
             job.setUpdatedAt(LocalDateTime.now());
             job.setFailureReason(null);
             job.setPriority(JobPriority.LOW);
             Job saved=jobRepository.save(job);
+            jobHistoryService.recordHistory(job,fromStatus,JobStatus.QUEUED,null);
             jobProducer.sendJob(id,saved.getPriority());
         }
         else{
@@ -72,7 +80,11 @@ public class JobService {
     public void cancelJob(Long id){
         Job job=jobRepository.findById(id).orElseThrow(()->new JobNotFoundException("Job not found"));
         if(job.getStatus()==JobStatus.QUEUED){
+            JobStatus fromStatus=job.getStatus();
             job.setStatus(JobStatus.CANCELLED);
+            jobRepository.save(job);
+            jobHistoryService.recordHistory(job,fromStatus,JobStatus.CANCELLED,job.getFailureReason());
+
         }
         else{
             throw new InvalidJobStateException("Only queued jobs can be cancelled");

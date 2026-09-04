@@ -34,7 +34,7 @@ public interface JobRepository extends JpaRepository<Job, Long> {
 
     List<Job> findByStatusAndStartedAtIsNotNullAndCompletedAtIsNotNull(JobStatus jobStatus);
 
-    @Query("SELECT COALESCE(SUM(j.retry_count),0) FROM Job j")
+    @Query("SELECT COALESCE(SUM(j.retryCount), 0) FROM Job j")
     Long getTotalRetries();
 
     long countByRetryCountGreaterThan(Integer retryCount);
@@ -59,7 +59,25 @@ SELECT j FROM Job j WHERE j.status=:status AND j.startedAt<:cutoff
     long countByStatusAndFailureReasonContaining(JobStatus jobStatus, String jobTimedOut);
 
     List<Job> findTop5ByStatusOrderByUpdatedAtDesc(JobStatus jobStatus);
+
+    List<Job> findByStatusAndScheduledAtLessThanEqual(JobStatus jobStatus, LocalDateTime now);
+
+    @Modifying
+    @Transactional
+    @Query("""
+    UPDATE Job j
+    SET j.status = :queued,
+        j.updatedAt = CURRENT_TIMESTAMP
+    WHERE j.id = :id
+      AND j.status = :scheduled
+""")
+    int claimScheduledJob(
+            @Param("id") Long id,
+            @Param("queued") JobStatus queued,
+            @Param("scheduled") JobStatus scheduled
+    );
 }
+
 
 //
 //@Repository

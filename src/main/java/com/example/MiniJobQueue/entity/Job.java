@@ -40,4 +40,6 @@ public class Job {
     private LocalDateTime startedAt;
 
     private LocalDateTime completedAt;
+
+    private LocalDateTime scheduledAt;
 }
