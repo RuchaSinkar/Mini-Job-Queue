@@ -1,0 +1,14 @@
+services:
+
+  app:
+    image: mini-job-queue:latest
+    container_name: mini-job-queue
+
+    ports:
+      - "8080:8080"
+
+    environment:
+      DB_PASSWORD: ${DB_PASSWORD}
+      RABBITMQ_PASSWORD: ${RABBITMQ_PASSWORD}
+
+    restart: unless-stopped

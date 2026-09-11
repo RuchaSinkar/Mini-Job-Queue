@@ -22,3 +22,9 @@ spring:
 job:
   processing:
     timeout: 30
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info,metrics,prometheus
