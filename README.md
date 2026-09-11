@@ -60,7 +60,7 @@ Grafana dashboards are used to visualize job-processing metrics collected by Pro
 ### 1. Clone the repository
 
 ```bash
-git clone <your-repository-url>
+git clone https://github.com/RuchaSinkar/Mini-Job-Queue.git
 cd Mini-Job-Queue
 ```
 
